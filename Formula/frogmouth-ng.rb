@@ -7,6 +7,12 @@ class FrogmouthNg < Formula
   sha256 "2549ec2c6250d2d8d08dbd51c907a2a1982b0707ac33d6613793ac0da9e057ed"
   license "MIT"
 
+  bottle do
+    root_url "https://github.com/sphr2k/homebrew-tap-frogmouth-ng/releases/download/frogmouth-ng-0.9.2"
+    rebuild 1
+    sha256 cellar: :any_skip_relocation, arm64_tahoe: "5c8683d5f237bd458b4901262ec63051200b2b5f7d7fb9c22e1c8c9027e8c156"
+  end
+
   depends_on "python3"
   conflicts_with "frogmouth", because: "both install a `frogmouth` executable"
 
