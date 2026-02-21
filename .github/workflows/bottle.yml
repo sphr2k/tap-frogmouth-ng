@@ -54,7 +54,8 @@ jobs:
           if [ "$(uname -s)" = "Linux" ]; then
             bundle_root="$(brew --repository)/Library/Homebrew/vendor/bundle"
             if [ -d "${bundle_root}" ]; then
-              sudo find "${bundle_root}" -type d -exec chmod go-w {} + || true
+              sudo chown -R "$(id -u):$(id -g)" "${bundle_root}" || true
+              find "${bundle_root}" -type d -exec chmod u+rwx,go-w {} + || true
             fi
           fi
           brew bottle --json "${{ steps.tap.outputs.name }}/${FORMULA_NAME}"
