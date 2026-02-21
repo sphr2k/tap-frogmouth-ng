@@ -49,6 +49,14 @@ jobs:
           HOMEBREW_NO_AUTO_UPDATE: "1"
         run: |
           brew install --build-bottle "${{ steps.tap.outputs.name }}/${FORMULA_NAME}"
+          # Homebrew's developer-mode bundle install can fail on some Linux arm64 runners
+          # if vendor/bundle directories are world-writable.
+          if [ "$(uname -s)" = "Linux" ]; then
+            bundle_root="$(brew --repository)/Library/Homebrew/vendor/bundle"
+            if [ -d "${bundle_root}" ]; then
+              find "${bundle_root}" -type d -exec chmod go-w {} +
+            fi
+          fi
           brew bottle --json "${{ steps.tap.outputs.name }}/${FORMULA_NAME}"
 
       - name: Upload bottle artifacts
