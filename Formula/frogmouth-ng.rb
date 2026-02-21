@@ -8,13 +8,14 @@ class FrogmouthNg < Formula
   license "MIT"
 
   bottle do
-    root_url "https://github.com/sphr2k/homebrew-tap-frogmouth-ng/releases/download/frogmouth-ng-0.9.2"
-    rebuild 1
-    sha256 cellar: :any_skip_relocation, arm64_tahoe: "5c8683d5f237bd458b4901262ec63051200b2b5f7d7fb9c22e1c8c9027e8c156"
+    root_url "https://github.com/sphr2k/tap-frogmouth-ng/releases/download/frogmouth-ng-0.9.2"
+    rebuild 2
+    sha256 cellar: :any_skip_relocation, arm64_tahoe: "a0db23dcbb4199b18c819908ef5693c2ab0d426a99d0e042e5c64003914a1226"
+    sha256 cellar: :any_skip_relocation, arm64_linux: "5d37660c08a4a0bb143f3477755758d3bee2564eb0a20e59164bd5cc2b3dd956"
+    sha256 cellar: :any_skip_relocation, x86_64_linux: "16a36c73e42a232979d8c291b864de5e8caee44174743d0146202d3457f7b05e"
   end
 
   depends_on "python3"
-  conflicts_with "frogmouth", because: "both install a `frogmouth` executable"
 
   resource "pygments" do
     url "https://files.pythonhosted.org/packages/c7/21/705964c7812476f378728bdf590ca4b771ec72385c533964653c68e86bdc/pygments-2.19.2-py3-none-any.whl"
