@@ -1,0 +1,113 @@
+name: Bottle
+
+on:
+  workflow_dispatch:
+  push:
+    tags:
+      - "frogmouth-ng-*"
+
+permissions:
+  contents: write
+
+env:
+  FORMULA_NAME: frogmouth-ng
+  TAP_NAME: sphr2k/tap-frogmouth-ng
+
+jobs:
+  build:
+    name: Build (${{ matrix.id }})
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - id: tahoe-arm64
+            runner: macos-26
+          - id: linux-amd64
+            runner: ubuntu-24.04
+          - id: linux-arm64
+            runner: ubuntu-24.04-arm
+    runs-on: ${{ matrix.runner }}
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Set up Homebrew
+        uses: Homebrew/actions/setup-homebrew@master
+
+      - name: Tap local repo
+        run: brew tap "${TAP_NAME}" "${GITHUB_WORKSPACE}"
+
+      - name: Build bottle
+        env:
+          HOMEBREW_NO_AUTO_UPDATE: "1"
+        run: |
+          brew install --build-bottle "${TAP_NAME}/${FORMULA_NAME}"
+          brew test "${TAP_NAME}/${FORMULA_NAME}"
+          brew bottle --json "${TAP_NAME}/${FORMULA_NAME}"
+
+      - name: Upload bottle artifacts
+        uses: actions/upload-artifact@v4
+        with:
+          name: bottle-${{ matrix.id }}
+          path: |
+            *.bottle*.tar.gz
+            *.bottle.json
+
+  merge-and-release:
+    name: Merge And Release
+    needs: build
+    runs-on: ubuntu-24.04
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Set up Homebrew
+        uses: Homebrew/actions/setup-homebrew@master
+
+      - name: Download bottle artifacts
+        uses: actions/download-artifact@v4
+        with:
+          path: dist
+          pattern: bottle-*
+          merge-multiple: true
+
+      - name: Tap local repo
+        run: brew tap "${TAP_NAME}" "${GITHUB_WORKSPACE}"
+
+      - name: Compute release tag
+        id: meta
+        run: |
+          version="$(sed -n 's#.*frogmouth_ng-\([0-9.]\+\)\.tar\.gz.*#\1#p' Formula/frogmouth-ng.rb | head -n1)"
+          echo "version=${version}" >> "${GITHUB_OUTPUT}"
+          echo "tag=frogmouth-ng-${version}" >> "${GITHUB_OUTPUT}"
+
+      - name: Merge bottle metadata into formula
+        run: |
+          brew bottle --merge --write --no-commit \
+            --root-url="https://github.com/${GITHUB_REPOSITORY}/releases/download/${{ steps.meta.outputs.tag }}" \
+            dist/*.json
+
+      - name: Commit bottle block update
+        run: |
+          if git diff --quiet -- Formula/frogmouth-ng.rb; then
+            echo "No formula changes to commit."
+            exit 0
+          fi
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add Formula/frogmouth-ng.rb
+          git commit -m "Update bottle hashes for ${FORMULA_NAME} ${{ steps.meta.outputs.version }}"
+          git push
+
+      - name: Publish release assets
+        uses: softprops/action-gh-release@v2
+        with:
+          tag_name: ${{ steps.meta.outputs.tag }}
+          name: frogmouth-ng ${{ steps.meta.outputs.version }}
+          files: dist/*.tar.gz
+          draft: false
+          prerelease: false
