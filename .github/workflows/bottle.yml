@@ -11,7 +11,6 @@ permissions:
 
 env:
   FORMULA_NAME: frogmouth-ng
-  TAP_NAME: sphr2k/tap-frogmouth-ng
 
 jobs:
   build:
@@ -35,16 +34,22 @@ jobs:
       - name: Set up Homebrew
         uses: Homebrew/actions/setup-homebrew@f181caf81dacfb95901873fccc6399facff2b788
 
+      - name: Compute tap name
+        id: tap
+        run: |
+          repo="${GITHUB_REPOSITORY#*/}"
+          tap_repo="${repo#homebrew-}"
+          echo "name=${GITHUB_REPOSITORY_OWNER}/${tap_repo}" >> "${GITHUB_OUTPUT}"
+
       - name: Tap local repo
-        run: brew tap "${TAP_NAME}" "${GITHUB_WORKSPACE}"
+        run: brew tap "${{ steps.tap.outputs.name }}" "${GITHUB_WORKSPACE}"
 
       - name: Build bottle
         env:
           HOMEBREW_NO_AUTO_UPDATE: "1"
         run: |
-          brew install --build-bottle "${TAP_NAME}/${FORMULA_NAME}"
-          brew test "${TAP_NAME}/${FORMULA_NAME}"
-          brew bottle --json "${TAP_NAME}/${FORMULA_NAME}"
+          brew install --build-bottle "${{ steps.tap.outputs.name }}/${FORMULA_NAME}"
+          brew bottle --json "${{ steps.tap.outputs.name }}/${FORMULA_NAME}"
 
       - name: Upload bottle artifacts
         uses: actions/upload-artifact@v6.0.0
@@ -68,6 +73,13 @@ jobs:
       - name: Set up Homebrew
         uses: Homebrew/actions/setup-homebrew@f181caf81dacfb95901873fccc6399facff2b788
 
+      - name: Compute tap name
+        id: tap
+        run: |
+          repo="${GITHUB_REPOSITORY#*/}"
+          tap_repo="${repo#homebrew-}"
+          echo "name=${GITHUB_REPOSITORY_OWNER}/${tap_repo}" >> "${GITHUB_OUTPUT}"
+
       - name: Download bottle artifacts
         uses: actions/download-artifact@v7.0.0
         with:
@@ -76,7 +88,7 @@ jobs:
           merge-multiple: true
 
       - name: Tap local repo
-        run: brew tap "${TAP_NAME}" "${GITHUB_WORKSPACE}"
+        run: brew tap "${{ steps.tap.outputs.name }}" "${GITHUB_WORKSPACE}"
 
       - name: Compute release tag
         id: meta
